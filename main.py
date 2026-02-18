@@ -7,14 +7,14 @@ WEIGHTS_PATH = Path("/data/custom_model.pth")
 
 # 2. SETUP ENVIRONMENT
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.debian_slim(python_version="3.10")
     .pip_install(
         "torch",
         "timm",
         "facenet-pytorch",
         "numpy",
         "Pillow",
-        "gradio"
+        "gradio==4.19.2"
     )
 )
 
@@ -23,6 +23,7 @@ app = modal.App("face-recognition-app", image=image)
 # ==========================================
 # PART 1: THE BRAIN (GPU)
 # ==========================================
+# Note: scaledown_window keeps the GPU alive for 300s after use
 @app.cls(gpu="T4", scaledown_window=300, volumes={"/data": vol})
 class FaceEngine:
     @modal.enter()
@@ -31,7 +32,7 @@ class FaceEngine:
         import torch
         from facenet_pytorch import MTCNN
 
-        print("🔧 Loading Model on GPU...")
+        print("🔧 GPU: Initializing...")
         self.device = 'cuda'
         self.detector = MTCNN(keep_all=False, device=self.device)
 
@@ -44,7 +45,6 @@ class FaceEngine:
         )
 
         # Check for Custom Weights
-        # We reload volume to ensure we see the latest file
         vol.reload()
         if WEIGHTS_PATH.exists():
             print(f"📂 Found custom weights! Loading from {WEIGHTS_PATH}")
@@ -59,10 +59,11 @@ class FaceEngine:
 
         self.model.to(self.device)
         self.model.eval()
-
+        
         # Transform
         config = timm.data.resolve_data_config(self.model.pretrained_cfg)
         self.transform = timm.data.create_transform(**config, is_training=False)
+        print("✅ GPU: Ready.")
 
     @modal.method()
     def get_embedding(self, image_input):
@@ -70,63 +71,58 @@ class FaceEngine:
         import torch
 
         if image_input is None: return None
-
-        # Convert Numpy (Gradio) -> PIL
+        
+        # Gradio sends numpy array, convert to PIL
         img = Image.fromarray(image_input).convert('RGB')
-
-        # Detect Face
+        
         img_cropped = self.detector(img)
         if img_cropped is None: return None
-
-        # Prepare for ViT
+            
         img_cropped = (img_cropped.permute(1, 2, 0).numpy() + 1) / 2
         img_cropped_pil = Image.fromarray((img_cropped * 255).astype('uint8'))
-
+        
         tensor = self.transform(img_cropped_pil).unsqueeze(0).to(self.device)
-
+        
         with torch.no_grad():
             emb = self.model(tensor)
-
+            
         return emb.cpu().numpy().flatten()
 
 # ==========================================
 # PART 2: THE WEBSITE (CPU)
 # ==========================================
-# NOTICE: Removed 'allow_concurrent_inputs' (Fixed Crash)
-# NOTICE: Added 'keep_warm=1' (Fixed Slow Loading)
-@app.function(image=image, volumes={"/data": vol}, keep_warm=1)
+# FIX 1: Changed 'keep_warm' to 'min_containers'
+@app.function(image=image, volumes={"/data": vol}, min_containers=1)
 @modal.web_server(port=8000)
 def web_ui():
     import gradio as gr
     import numpy as np
     import shutil
+    
+    print("🚀 Web UI: Starting up...")
 
     def compare_faces(img1, img2, threshold):
         if img1 is None or img2 is None:
             return "Please upload both images.", 0.0
-
-        # Call the GPU Engine
-        # Since we are in the same App, we call the class directly
+        
+        print("running comparison...")
         emb1 = FaceEngine().get_embedding.remote(img1)
         emb2 = FaceEngine().get_embedding.remote(img2)
-
+        
         if emb1 is None or emb2 is None:
-            return "❌ Face not detected in one of the images.", 0.0
-
+            return "❌ Face not detected.", 0.0
+            
         score = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
-
         result_text = "✅ MATCH" if score > threshold else "⛔ NO MATCH"
         return f"{result_text} (Score: {score:.4f})", float(score)
 
     def upload_weights(file_obj):
         if file_obj is None: return "No file uploaded."
-        
-        # Copy to the shared Volume path
-        shutil.copy(file_obj, WEIGHTS_PATH)
+        print(f"Saving weights from {file_obj} to {WEIGHTS_PATH}...")
+        shutil.copy(file_obj, str(WEIGHTS_PATH))
         vol.commit()
         return "✅ Success! Model updated."
 
-    # Build the Interface
     with gr.Blocks(title="Face ViT System") as demo:
         gr.Markdown("# 🧠 Vision Transformer Face Recognition")
         
@@ -146,10 +142,14 @@ def web_ui():
 
         with gr.Tab("⚙️ Model Manager"):
             gr.Markdown("Upload your `.pth` file here.")
-            file_input = gr.File(label="Upload Weights (.pth)", file_count="single", type="filepath")
+            file_input = gr.File(label="Upload Weights", type="filepath") 
             upload_btn = gr.Button("Upload to Cloud Storage")
             upload_msg = gr.Textbox(label="Status")
             
             upload_btn.click(upload_weights, inputs=file_input, outputs=upload_msg)
 
-    return demo
+    print("✅ Web UI: Launching Server...")
+    
+    # FIX 2: Explicitly launch on 0.0.0.0 and port 8000
+    # This keeps the function running and listening for Modal
+    demo.launch(server_name="0.0.0.0", server_port=8000)
