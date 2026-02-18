@@ -1,9 +1,27 @@
 import streamlit as st
 import modal
 import numpy as np
+import os
 import io
 import asyncio
 
+
+try:
+    os.environ["MODAL_TOKEN_ID"] = st.secrets["modal"]["token_id"]
+    os.environ["MODAL_TOKEN_SECRET"] = st.secrets["modal"]["token_secret"]
+except KeyError:
+    st.error("Secrets not found! Did you add [modal] section to Streamlit Secrets?")
+    st.stop()
+
+# --- CONNECT TO BACKEND ---
+try:
+    # Now Modal can see the credentials in os.environ
+    f = modal.Cls.lookup("face-vit-backend", "FaceModel")
+except Exception as e:
+    st.error(f"Connection Error: {e}")
+    st.info("Ensure you ran 'modal deploy backend_modal.py' on your laptop!")
+    st.stop()
+    
 # --- CONFIGURATION ---
 st.set_page_config(page_title="ViT Face AI", layout="wide")
 
