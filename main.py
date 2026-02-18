@@ -96,7 +96,7 @@ class FaceEngine:
 # PART 2: THE WEBSITE (CPU)
 # ==========================================
 # NOTICE: We mount volumes={"/data": vol} here too!
-@app.function(image=image, volumes={"/data": vol})
+@app.function(image=image, volumes={"/data": vol},keep_warm=1)
 @modal.web_server(port=8000)
 def web_ui():
     import gradio as gr
