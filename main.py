@@ -6,6 +6,7 @@ vol = modal.Volume.from_name("face-model-storage", create_if_missing=True)
 WEIGHTS_PATH = Path("/data/custom_model.pth")
 
 # 2. SETUP ENVIRONMENT
+# We only need the essentials. No heavy UI libraries.
 image = (
     modal.Image.debian_slim(python_version="3.10")
     .pip_install(
@@ -14,16 +15,16 @@ image = (
         "facenet-pytorch",
         "numpy",
         "Pillow",
-        "gradio==4.19.2"
+        "fastapi",          # Standard API framework
+        "python-multipart"  # Required for file uploads
     )
 )
 
-app = modal.App("face-recognition-app", image=image)
+app = modal.App("face-recognition-api", image=image)
 
 # ==========================================
 # PART 1: THE BRAIN (GPU)
 # ==========================================
-# Note: scaledown_window keeps the GPU alive for 300s after use
 @app.cls(gpu="T4", scaledown_window=300, volumes={"/data": vol})
 class FaceEngine:
     @modal.enter()
@@ -63,21 +64,21 @@ class FaceEngine:
         # Transform
         config = timm.data.resolve_data_config(self.model.pretrained_cfg)
         self.transform = timm.data.create_transform(**config, is_training=False)
-        print("✅ GPU: Ready.")
 
     @modal.method()
-    def get_embedding(self, image_input):
+    def get_embedding(self, image_bytes):
         from PIL import Image
+        import io
         import torch
 
-        if image_input is None: return None
+        # Convert bytes directly to image
+        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         
-        # Gradio sends numpy array, convert to PIL
-        img = Image.fromarray(image_input).convert('RGB')
-        
+        # Detect Face
         img_cropped = self.detector(img)
         if img_cropped is None: return None
             
+        # Prepare for ViT
         img_cropped = (img_cropped.permute(1, 2, 0).numpy() + 1) / 2
         img_cropped_pil = Image.fromarray((img_cropped * 255).astype('uint8'))
         
@@ -89,67 +90,48 @@ class FaceEngine:
         return emb.cpu().numpy().flatten()
 
 # ==========================================
-# PART 2: THE WEBSITE (CPU)
+# PART 2: THE API (CPU)
 # ==========================================
-# FIX 1: Changed 'keep_warm' to 'min_containers'
 @app.function(image=image, volumes={"/data": vol}, min_containers=1)
-@modal.web_server(port=8000)
-def web_ui():
-    import gradio as gr
+@modal.asgi_app()
+def fastapi_app():
+    from fastapi import FastAPI, UploadFile, File
     import numpy as np
     import shutil
     
-    print("🚀 Web UI: Starting up...")
+    web_app = FastAPI(title="Face ViT API")
 
-    def compare_faces(img1, img2, threshold):
-        if img1 is None or img2 is None:
-            return "Please upload both images.", 0.0
+    @web_app.post("/compare")
+    async def compare_faces(
+        file1: UploadFile = File(...), 
+        file2: UploadFile = File(...)
+    ):
+        # Read bytes
+        bytes1 = await file1.read()
+        bytes2 = await file2.read()
         
-        print("running comparison...")
-        emb1 = FaceEngine().get_embedding.remote(img1)
-        emb2 = FaceEngine().get_embedding.remote(img2)
+        # Send to GPU
+        emb1 = FaceEngine().get_embedding.remote(bytes1)
+        emb2 = FaceEngine().get_embedding.remote(bytes2)
         
         if emb1 is None or emb2 is None:
-            return "❌ Face not detected.", 0.0
+            return {"match": False, "score": 0.0, "error": "No face detected in one of the images"}
             
+        # Calc Score
         score = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
-        result_text = "✅ MATCH" if score > threshold else "⛔ NO MATCH"
-        return f"{result_text} (Score: {score:.4f})", float(score)
-
-    def upload_weights(file_obj):
-        if file_obj is None: return "No file uploaded."
-        print(f"Saving weights from {file_obj} to {WEIGHTS_PATH}...")
-        shutil.copy(file_obj, str(WEIGHTS_PATH))
-        vol.commit()
-        return "✅ Success! Model updated."
-
-    with gr.Blocks(title="Face ViT System") as demo:
-        gr.Markdown("# 🧠 Vision Transformer Face Recognition")
         
-        with gr.Tab("👥 Verify Faces"):
-            with gr.Row():
-                im1 = gr.Image(label="Face 1", type="numpy")
-                im2 = gr.Image(label="Face 2", type="numpy")
-            
-            thresh = gr.Slider(0.0, 1.0, value=0.6, label="Threshold")
-            btn = gr.Button("Compare", variant="primary")
-            
-            with gr.Row():
-                lbl = gr.Label(label="Result")
-                num = gr.Number(label="Similarity Score")
-            
-            btn.click(compare_faces, inputs=[im1, im2, thresh], outputs=[lbl, num])
+        # Return JSON
+        return {
+            "match": bool(score > 0.6),
+            "score": float(score),
+            "verdict": "MATCH" if score > 0.6 else "NO MATCH"
+        }
 
-        with gr.Tab("⚙️ Model Manager"):
-            gr.Markdown("Upload your `.pth` file here.")
-            file_input = gr.File(label="Upload Weights", type="filepath") 
-            upload_btn = gr.Button("Upload to Cloud Storage")
-            upload_msg = gr.Textbox(label="Status")
-            
-            upload_btn.click(upload_weights, inputs=file_input, outputs=upload_msg)
+    @web_app.post("/upload-model")
+    async def upload_model(file: UploadFile = File(...)):
+        with open(WEIGHTS_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        vol.commit()
+        return {"status": "success", "message": "Model weights updated. GPU will reload on next request."}
 
-    print("✅ Web UI: Launching Server...")
-    
-    # FIX 2: Explicitly launch on 0.0.0.0 and port 8000
-    # This keeps the function running and listening for Modal
-    demo.launch(server_name="0.0.0.0", server_port=8000)
+    return web_app
