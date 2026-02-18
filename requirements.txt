@@ -1,5 +1,3 @@
 streamlit
-torch
-torchvision
-timm
-pillow
+modal
+numpy
