@@ -1,2 +1,92 @@
-*.pth
+# Python
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
 __pycache__/
+*.pth
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+*.whl
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.venv/
+
+# dotenv
+.env
+.env.*
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+
+# Type checkers / linters
+.mypy_cache/
+.pyre/
+.pytype/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and databases
+*.log
+logs/
+*.sqlite3
+*.db
+*.pid
+
+# FastAPI / ASGI / servers
+# Uvicorn / Gunicorn logs and pid files
+uvicorn.log
+gunicorn.error.log
+gunicorn.access.log
+*.pid
+
+# Static / media / build artifacts
+static/
+staticfiles/
+media/
+build/
+dist/
+
+# Misc
+.DS_Store
+Thumbs.db

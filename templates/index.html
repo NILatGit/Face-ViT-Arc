@@ -1,0 +1,1694 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FaceOS — Neural Identity Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080c14;
+        --surface: #0e1420;
+        --card: #111827;
+        --border: #1e2d42;
+        --border-bright: #2d4260;
+        --text: #e2eaf5;
+        --muted: #5a7a9a;
+        --accent: #00d4ff;
+        --accent2: #7c3aed;
+        --green: #00ffa3;
+        --red: #ff4060;
+        --amber: #ffb300;
+        --glow: rgba(0, 212, 255, 0.15);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Space Mono", monospace;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Animated grid background */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .app-shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 30px 20px;
+      }
+
+      /* ---- HEADER ---- */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .logo {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.6rem;
+        letter-spacing: -0.02em;
+      }
+      .logo span {
+        color: var(--accent);
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.7rem;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 6px 14px;
+        border-radius: 100px;
+      }
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--green);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--green);
+        animation: pulse 2s ease infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ---- TABS ---- */
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 28px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 5px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        background: transparent;
+        color: var(--muted);
+        border: none;
+        padding: 11px 16px;
+        border-radius: 7px;
+        cursor: pointer;
+        font-family: "Syne", sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        letter-spacing: 0.02em;
+        transition: all 0.2s;
+      }
+      .tab-btn:hover {
+        color: var(--text);
+      }
+      .tab-btn.active {
+        background: var(--accent);
+        color: #000;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+      }
+
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+        animation: fadeUp 0.3s ease;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ---- CARDS ---- */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 28px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--accent),
+          transparent
+        );
+        opacity: 0.4;
+      }
+
+      .card-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .card-title .icon {
+        width: 32px;
+        height: 32px;
+        background: var(--glow);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+      }
+
+      /* ---- DROP ZONES ---- */
+      .drop-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .drop-grid.single {
+        grid-template-columns: 1fr;
+      }
+
+      .drop-zone {
+        border: 2px dashed var(--border-bright);
+        border-radius: 12px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s;
+        background: var(--surface);
+        position: relative;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .drop-zone:hover {
+        border-color: var(--accent);
+        background: rgba(0, 212, 255, 0.04);
+        box-shadow: 0 0 20px var(--glow);
+      }
+      .drop-zone.has-image {
+        border-color: var(--accent);
+        border-style: solid;
+        padding: 8px;
+        gap: 0;
+      }
+      .drop-zone .dz-icon {
+        font-size: 2rem;
+        opacity: 0.5;
+      }
+      .drop-zone .dz-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .drop-zone .dz-badge {
+        font-size: 0.65rem;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .preview-img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 8px;
+        display: none;
+      }
+      .preview-img.visible {
+        display: block;
+      }
+
+      .preview-name {
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-top: 8px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: none;
+      }
+      .preview-name.visible {
+        display: block;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      /* ---- ACTION BUTTON ---- */
+      .btn-action {
+        width: 100%;
+        padding: 14px;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        border-radius: 10px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-action:hover {
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        transform: translateY(-1px);
+      }
+      .btn-action:active {
+        transform: translateY(0);
+      }
+      .btn-action:disabled {
+        background: var(--border);
+        color: var(--muted);
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+      .btn-action.loading::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.15);
+        animation: shimmer 1s ease infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          width: 0%;
+        }
+        50% {
+          width: 60%;
+        }
+        100% {
+          width: 100%;
+        }
+      }
+
+      .btn-secondary {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border-bright);
+        border-radius: 10px;
+        font-family: "Syne", sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 10px;
+      }
+      .btn-secondary:hover {
+        border-color: var(--accent2);
+        color: var(--accent2);
+      }
+
+      /* ---- RESULT PANEL ---- */
+      .result-panel {
+        margin-top: 24px;
+        display: none;
+        animation: fadeUp 0.4s ease;
+      }
+      .result-panel.visible {
+        display: block;
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .verdict {
+        font-family: "Syne", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+      }
+      .verdict.match {
+        color: var(--green);
+        text-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
+      }
+      .verdict.no-match {
+        color: var(--red);
+        text-shadow: 0 0 20px rgba(255, 64, 96, 0.4);
+      }
+      .verdict.found {
+        color: var(--accent);
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+      }
+
+      /* Gauge chart */
+      .gauge-wrap {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+      }
+
+      .gauge-svg {
+        flex-shrink: 0;
+      }
+
+      .gauge-info {
+        flex: 1;
+      }
+      .gauge-score {
+        font-family: "Syne", sans-serif;
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .gauge-label {
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      /* Breakdown bars */
+      .breakdown {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+      }
+      .breakdown-title {
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 14px;
+      }
+
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .bar-label {
+        font-size: 0.72rem;
+        color: var(--muted);
+        width: 110px;
+        flex-shrink: 0;
+      }
+      .bar-track {
+        flex: 1;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        width: 0%;
+      }
+      .bar-fill.cyan {
+        background: var(--accent);
+      }
+      .bar-fill.green {
+        background: var(--green);
+      }
+      .bar-fill.amber {
+        background: var(--amber);
+      }
+      .bar-fill.red {
+        background: var(--red);
+      }
+      .bar-value {
+        font-size: 0.72rem;
+        color: var(--text);
+        width: 38px;
+        text-align: right;
+      }
+
+      /* Threshold indicator */
+      .threshold-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .threshold-line::before {
+        content: "";
+        display: inline-block;
+        width: 20px;
+        height: 1px;
+        background: var(--amber);
+        border-top: 1px dashed var(--amber);
+      }
+
+      /* Compare faces row */
+      .face-compare {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .face-compare img {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid var(--border-bright);
+      }
+      .face-compare .connector {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .connector-line {
+        width: 100%;
+        height: 2px;
+        position: relative;
+        overflow: visible;
+      }
+      .connector-line::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 5%;
+        right: 5%;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          var(--border-bright),
+          var(--accent),
+          var(--border-bright)
+        );
+      }
+      .connector-dots {
+        font-size: 0.65rem;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+      }
+
+      /* ---- FEEDBACK STRIP ---- */
+      .feedback-strip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      .feedback-strip .fb-q {
+        flex: 1;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .fb-btn {
+        padding: 7px 16px;
+        border-radius: 7px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.78rem;
+        cursor: pointer;
+        border: 1px solid;
+        transition: all 0.2s;
+      }
+      .fb-btn.correct {
+        color: var(--green);
+        border-color: rgba(0, 255, 163, 0.3);
+        background: rgba(0, 255, 163, 0.06);
+      }
+      .fb-btn.correct:hover {
+        background: rgba(0, 255, 163, 0.15);
+      }
+      .fb-btn.wrong {
+        color: var(--red);
+        border-color: rgba(255, 64, 96, 0.3);
+        background: rgba(255, 64, 96, 0.06);
+      }
+      .fb-btn.wrong:hover {
+        background: rgba(255, 64, 96, 0.15);
+      }
+      .fb-btn.active-correct {
+        background: var(--green) !important;
+        color: #000 !important;
+      }
+      .fb-btn.active-wrong {
+        background: var(--red) !important;
+        color: #fff !important;
+      }
+
+      /* Input fields */
+      .input-field {
+        width: 100%;
+        padding: 12px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border-bright);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: "Space Mono", monospace;
+        font-size: 0.85rem;
+        margin: 12px 0;
+        transition: border-color 0.2s;
+        outline: none;
+      }
+      .input-field:focus {
+        border-color: var(--accent);
+      }
+
+      /* ---- DASHBOARD ---- */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+      }
+      .stat-card.acc::after {
+        background: var(--green);
+      }
+      .stat-card.total::after {
+        background: var(--accent);
+      }
+      .stat-card.pending::after {
+        background: var(--amber);
+      }
+
+      .stat-num {
+        font-family: "Syne", sans-serif;
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 6px;
+      }
+      .stat-card.acc .stat-num {
+        color: var(--green);
+      }
+      .stat-card.total .stat-num {
+        color: var(--accent);
+      }
+      .stat-card.pending .stat-num {
+        color: var(--amber);
+      }
+      .stat-lbl {
+        font-size: 0.68rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      /* Donut */
+      .donut-wrap {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+      }
+      .donut-legend {
+        flex: 1;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 0.78rem;
+      }
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .legend-label {
+        color: var(--muted);
+        flex: 1;
+      }
+      .legend-val {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+      }
+
+      /* Log table */
+      .log-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .log-table th {
+        text-align: left;
+        font-size: 0.65rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .log-table td {
+        padding: 11px 12px;
+        font-size: 0.78rem;
+        border-bottom: 1px solid rgba(30, 45, 66, 0.5);
+        vertical-align: middle;
+      }
+      .log-table tr:last-child td {
+        border-bottom: none;
+      }
+      .log-table tr:hover td {
+        background: rgba(0, 212, 255, 0.02);
+      }
+
+      .conf-pill {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 100px;
+        font-size: 0.68rem;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+      }
+      .conf-pill.high {
+        background: rgba(0, 255, 163, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 163, 0.2);
+      }
+      .conf-pill.mid {
+        background: rgba(255, 179, 0, 0.1);
+        color: var(--amber);
+        border: 1px solid rgba(255, 179, 0, 0.2);
+      }
+      .conf-pill.low {
+        background: rgba(255, 64, 96, 0.1);
+        color: var(--red);
+        border: 1px solid rgba(255, 64, 96, 0.2);
+      }
+
+      .type-badge {
+        font-size: 0.65rem;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: rgba(124, 58, 237, 0.15);
+        color: #a78bfa;
+        border: 1px solid rgba(124, 58, 237, 0.2);
+      }
+
+      .tb-fb-btn {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 5px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        margin-right: 4px;
+        font-family: "Space Mono", monospace;
+        transition: all 0.15s;
+      }
+      .tb-fb-btn:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .status-correct {
+        color: var(--green);
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.75rem;
+      }
+      .status-wrong {
+        color: var(--red);
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.75rem;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: var(--card);
+        border: 1px solid var(--border-bright);
+        border-radius: 10px;
+        padding: 14px 20px;
+        font-size: 0.8rem;
+        z-index: 9999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        max-width: 280px;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .toast.success {
+        border-color: rgba(0, 255, 163, 0.4);
+      }
+      .toast.error {
+        border-color: rgba(255, 64, 96, 0.4);
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-bright);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toast" class="toast"></div>
+
+    <div class="app-shell">
+      <header>
+        <div class="logo">Face<span>OS</span></div>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          Neural Engine Online
+        </div>
+      </header>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('verify', this)">
+          ⚖ 1:1 Verify
+        </button>
+        <button class="tab-btn" onclick="showTab('search', this)">
+          ⌕ Identify
+        </button>
+        <button class="tab-btn" onclick="showTab('dashboard', this)">
+          ◈ Dashboard
+        </button>
+      </div>
+
+      <!-- ===== TAB: VERIFY ===== -->
+      <div id="verify" class="tab-content active">
+        <div class="card">
+          <div class="card-title">
+            <div class="icon">⚖</div>
+            Compare Two Faces
+          </div>
+
+          <div class="drop-grid">
+            <div
+              class="drop-zone"
+              id="dz-v1"
+              onclick="document.getElementById('v1').click()"
+            >
+              <img class="preview-img" id="prev-v1" alt="Face 1 preview" />
+              <div class="dz-icon" id="dz-v1-icon">👤</div>
+              <div class="dz-badge">Face 1</div>
+              <div class="dz-label" id="dz-v1-label">Click or drop image</div>
+              <input
+                type="file"
+                id="v1"
+                accept="image/*"
+                onchange="
+                  previewDrop(
+                    'v1',
+                    'prev-v1',
+                    'dz-v1',
+                    'dz-v1-icon',
+                    'dz-v1-label',
+                    'vname1',
+                  )
+                "
+              />
+            </div>
+            <div
+              class="drop-zone"
+              id="dz-v2"
+              onclick="document.getElementById('v2').click()"
+            >
+              <img class="preview-img" id="prev-v2" alt="Face 2 preview" />
+              <div class="dz-icon" id="dz-v2-icon">👤</div>
+              <div class="dz-badge">Face 2</div>
+              <div class="dz-label" id="dz-v2-label">Click or drop image</div>
+              <input
+                type="file"
+                id="v2"
+                accept="image/*"
+                onchange="
+                  previewDrop(
+                    'v2',
+                    'prev-v2',
+                    'dz-v2',
+                    'dz-v2-icon',
+                    'dz-v2-label',
+                    'vname2',
+                  )
+                "
+              />
+            </div>
+          </div>
+
+          <button class="btn-action" id="btn-verify" onclick="runVerify()">
+            Run Comparison
+          </button>
+
+          <!-- RESULT -->
+          <div class="result-panel" id="verify-res">
+            <div class="result-header">
+              <div id="v-verdict" class="verdict">—</div>
+              <div
+                style="
+                  text-align: right;
+                  font-size: 0.72rem;
+                  color: var(--muted);
+                "
+              >
+                Log ID:
+                <span id="v-log-id" style="color: var(--accent)">#—</span>
+              </div>
+            </div>
+
+            <!-- Face compare strip -->
+            <div class="face-compare">
+              <img id="fc-img1" src="" alt="Face 1" />
+              <div class="connector">
+                <div class="connector-line"></div>
+                <div class="connector-dots" id="fc-score-text">—</div>
+              </div>
+              <img id="fc-img2" src="" alt="Face 2" />
+            </div>
+
+            <!-- Gauge -->
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" width="90" height="90" viewBox="0 0 90 90">
+                <circle
+                  cx="45"
+                  cy="45"
+                  r="36"
+                  fill="none"
+                  stroke="#1e2d42"
+                  stroke-width="8"
+                />
+                <circle
+                  id="v-gauge-ring"
+                  cx="45"
+                  cy="45"
+                  r="36"
+                  fill="none"
+                  stroke="#00d4ff"
+                  stroke-width="8"
+                  stroke-dasharray="226"
+                  stroke-dashoffset="226"
+                  stroke-linecap="round"
+                  transform="rotate(-90 45 45)"
+                  style="
+                    transition:
+                      stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1),
+                      stroke 0.5s;
+                  "
+                />
+                <text
+                  id="v-gauge-pct"
+                  x="45"
+                  y="50"
+                  text-anchor="middle"
+                  font-family="Syne"
+                  font-weight="800"
+                  font-size="16"
+                  fill="#e2eaf5"
+                >
+                  —
+                </text>
+              </svg>
+              <div class="gauge-info">
+                <div class="gauge-score" id="v-score-big">—</div>
+                <div class="gauge-label">Similarity Score</div>
+              </div>
+            </div>
+
+            <!-- Breakdown bars -->
+            <div class="breakdown">
+              <div class="breakdown-title">Analysis Breakdown</div>
+              <div class="bar-row">
+                <div class="bar-label">Similarity</div>
+                <div class="bar-track">
+                  <div class="bar-fill cyan" id="vb-sim"></div>
+                </div>
+                <div class="bar-value" id="vb-sim-v">—</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Confidence</div>
+                <div class="bar-track">
+                  <div class="bar-fill green" id="vb-conf"></div>
+                </div>
+                <div class="bar-value" id="vb-conf-v">—</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Threshold Δ</div>
+                <div class="bar-track">
+                  <div class="bar-fill amber" id="vb-thr"></div>
+                </div>
+                <div class="bar-value" id="vb-thr-v">—</div>
+              </div>
+              <div class="threshold-line">Decision threshold at 60%</div>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback-strip">
+              <div class="fb-q">Was this result correct?</div>
+              <button
+                class="fb-btn correct"
+                id="v-fb-y"
+                onclick="sendVerifyFeedback('correct')"
+              >
+                ✓ Correct
+              </button>
+              <button
+                class="fb-btn wrong"
+                id="v-fb-n"
+                onclick="sendVerifyFeedback('wrong')"
+              >
+                ✗ Wrong
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: SEARCH ===== -->
+      <div id="search" class="tab-content">
+        <div class="card">
+          <div class="card-title">
+            <div class="icon">⌕</div>
+            Identify From Database
+          </div>
+
+          <div class="drop-grid single">
+            <div
+              class="drop-zone"
+              id="dz-s1"
+              onclick="document.getElementById('s1').click()"
+            >
+              <img class="preview-img" id="prev-s1" alt="Search preview" />
+              <div class="dz-icon" id="dz-s1-icon">🔍</div>
+              <div class="dz-badge">Query Face</div>
+              <div class="dz-label" id="dz-s1-label">Click to select image</div>
+              <input
+                type="file"
+                id="s1"
+                accept="image/*"
+                onchange="
+                  previewDrop(
+                    's1',
+                    'prev-s1',
+                    'dz-s1',
+                    'dz-s1-icon',
+                    'dz-s1-label',
+                    'sname1',
+                  )
+                "
+              />
+            </div>
+          </div>
+
+          <button class="btn-action" id="btn-search" onclick="runSearch()">
+            Identify Person
+          </button>
+
+          <!-- RESULT -->
+          <div class="result-panel" id="search-res">
+            <div class="result-header">
+              <div id="s-verdict" class="verdict found">—</div>
+              <div
+                style="
+                  text-align: right;
+                  font-size: 0.72rem;
+                  color: var(--muted);
+                "
+              >
+                Log ID:
+                <span id="s-log-id" style="color: var(--accent)">#—</span>
+              </div>
+            </div>
+
+            <!-- Gauge -->
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" width="90" height="90" viewBox="0 0 90 90">
+                <circle
+                  cx="45"
+                  cy="45"
+                  r="36"
+                  fill="none"
+                  stroke="#1e2d42"
+                  stroke-width="8"
+                />
+                <circle
+                  id="s-gauge-ring"
+                  cx="45"
+                  cy="45"
+                  r="36"
+                  fill="none"
+                  stroke="#00d4ff"
+                  stroke-width="8"
+                  stroke-dasharray="226"
+                  stroke-dashoffset="226"
+                  stroke-linecap="round"
+                  transform="rotate(-90 45 45)"
+                  style="
+                    transition:
+                      stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1),
+                      stroke 0.5s;
+                  "
+                />
+                <text
+                  id="s-gauge-pct"
+                  x="45"
+                  y="50"
+                  text-anchor="middle"
+                  font-family="Syne"
+                  font-weight="800"
+                  font-size="16"
+                  fill="#e2eaf5"
+                >
+                  —
+                </text>
+              </svg>
+              <div class="gauge-info">
+                <div class="gauge-score" id="s-score-big">—</div>
+                <div class="gauge-label">Match Confidence</div>
+              </div>
+            </div>
+
+            <!-- Breakdown -->
+            <div class="breakdown">
+              <div class="breakdown-title">Match Quality</div>
+              <div class="bar-row">
+                <div class="bar-label">Match Score</div>
+                <div class="bar-track">
+                  <div class="bar-fill cyan" id="sb-match"></div>
+                </div>
+                <div class="bar-value" id="sb-match-v">—</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Certainty</div>
+                <div class="bar-track">
+                  <div class="bar-fill green" id="sb-cert"></div>
+                </div>
+                <div class="bar-value" id="sb-cert-v">—</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Risk Level</div>
+                <div class="bar-track">
+                  <div class="bar-fill red" id="sb-risk"></div>
+                </div>
+                <div class="bar-value" id="sb-risk-v">—</div>
+              </div>
+            </div>
+
+            <!-- Register -->
+            <div class="breakdown" style="margin-bottom: 16px">
+              <div class="breakdown-title">Register as New Person</div>
+              <input
+                type="text"
+                id="new-name"
+                class="input-field"
+                placeholder="Enter full name…"
+              />
+              <button class="btn-secondary" onclick="registerFace()">
+                + Add to Database
+              </button>
+            </div>
+
+            <!-- Feedback -->
+            <div class="feedback-strip">
+              <div class="fb-q">Is the identification correct?</div>
+              <button
+                class="fb-btn correct"
+                id="s-fb-y"
+                onclick="sendSearchFeedback('correct')"
+              >
+                ✓ Correct
+              </button>
+              <button
+                class="fb-btn wrong"
+                id="s-fb-n"
+                onclick="sendSearchFeedback('wrong')"
+              >
+                ✗ Wrong
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: DASHBOARD ===== -->
+      <div id="dashboard" class="tab-content">
+        <div class="card">
+          <div class="card-title">
+            <div class="icon">◈</div>
+            System Analytics
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card acc">
+              <div class="stat-num" id="stat-acc">—</div>
+              <div class="stat-lbl">Accuracy</div>
+            </div>
+            <div class="stat-card total">
+              <div class="stat-num" id="stat-total">—</div>
+              <div class="stat-lbl">Total Scans</div>
+            </div>
+            <div class="stat-card pending">
+              <div class="stat-num" id="stat-pending">—</div>
+              <div class="stat-lbl">Awaiting Feedback</div>
+            </div>
+          </div>
+
+          <!-- Donut chart -->
+          <div class="donut-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle
+                cx="55"
+                cy="55"
+                r="42"
+                fill="none"
+                stroke="#1e2d42"
+                stroke-width="14"
+              />
+              <circle
+                id="d-correct-arc"
+                cx="55"
+                cy="55"
+                r="42"
+                fill="none"
+                stroke="#00ffa3"
+                stroke-width="14"
+                stroke-dasharray="264"
+                stroke-dashoffset="264"
+                transform="rotate(-90 55 55)"
+                stroke-linecap="butt"
+                style="transition: stroke-dashoffset 1s ease"
+              />
+              <circle
+                id="d-wrong-arc"
+                cx="55"
+                cy="55"
+                r="42"
+                fill="none"
+                stroke="#ff4060"
+                stroke-width="14"
+                stroke-dasharray="264"
+                stroke-dashoffset="264"
+                transform="rotate(-90 55 55)"
+                stroke-linecap="butt"
+                style="transition: stroke-dashoffset 1s ease"
+              />
+              <text
+                x="55"
+                y="51"
+                text-anchor="middle"
+                font-family="Syne"
+                font-weight="800"
+                font-size="15"
+                fill="#e2eaf5"
+                id="d-center-top"
+              >
+                —
+              </text>
+              <text
+                x="55"
+                y="66"
+                text-anchor="middle"
+                font-family="Space Mono"
+                font-size="8"
+                fill="#5a7a9a"
+              >
+                accuracy
+              </text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background: var(--green)"></div>
+                <div class="legend-label">Correct</div>
+                <div class="legend-val" id="leg-correct">—</div>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background: var(--red)"></div>
+                <div class="legend-label">Wrong</div>
+                <div class="legend-val" id="leg-wrong">—</div>
+              </div>
+              <div class="legend-item">
+                <div
+                  class="legend-dot"
+                  style="background: var(--border-bright)"
+                ></div>
+                <div class="legend-label">Pending</div>
+                <div class="legend-val" id="leg-pending">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log table -->
+          <div class="breakdown-title" style="margin-bottom: 14px">
+            Recent Activity
+          </div>
+          <table class="log-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Result</th>
+                <th>Confidence</th>
+                <th>Feedback</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ---- State ----
+      let lastVerifyLogId = null;
+      let lastSearchLogId = null;
+
+      // ---- Tab Switching ----
+      function showTab(id, btn) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((d) => d.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        btn.classList.add("active");
+        if (id === "dashboard") loadHistory();
+      }
+
+      // ---- Image Preview ----
+      function previewDrop(inputId, imgId, dzId, iconId, labelId) {
+        const file = document.getElementById(inputId).files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.getElementById(imgId);
+          img.src = e.target.result;
+          img.classList.add("visible");
+          document.getElementById(iconId).style.display = "none";
+          document.getElementById(labelId).innerText =
+            file.name.length > 22 ? file.name.slice(0, 20) + "…" : file.name;
+          document.getElementById(dzId).classList.add("has-image");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // ---- Gauge update ----
+      function updateGauge(ringId, pctId, pct) {
+        const circumference = 226;
+        const offset = circumference - (circumference * pct) / 100;
+        const ring = document.getElementById(ringId);
+        ring.style.strokeDashoffset = offset;
+        const color = pct >= 60 ? "#00ffa3" : pct >= 40 ? "#ffb300" : "#ff4060";
+        ring.style.stroke = color;
+        document.getElementById(pctId).textContent = Math.round(pct) + "%";
+      }
+
+      // ---- Bar update ----
+      function updateBar(fillId, valId, pct, clampMax) {
+        const disp = Math.min(pct, clampMax ?? 100);
+        setTimeout(() => {
+          document.getElementById(fillId).style.width = disp + "%";
+          document.getElementById(valId).textContent = Math.round(pct) + "%";
+        }, 100);
+      }
+
+      // ---- Toast ----
+      function showToast(msg, type = "success") {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast " + type;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 3000);
+      }
+
+      // ---- VERIFY ----
+      async function runVerify() {
+        const f1 = document.getElementById("v1").files[0];
+        const f2 = document.getElementById("v2").files[0];
+        if (!f1 || !f2) {
+          showToast("Please select two images", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-verify");
+        btn.disabled = true;
+        btn.classList.add("loading");
+        btn.textContent = "Analysing…";
+
+        const fd = new FormData();
+        fd.append("file1", f1);
+        fd.append("file2", f2);
+
+        try {
+          const res = await fetch("/api/verify", { method: "POST", body: fd });
+          const data = await res.json();
+
+          if (data.error) {
+            showToast(data.error, "error");
+            return;
+          }
+
+          lastVerifyLogId = data.log_id;
+          const pct = Math.min(data.confidence * 100, 100);
+          const isMatch = data.match;
+
+          // Verdict
+          const vEl = document.getElementById("v-verdict");
+          vEl.textContent = isMatch ? "✓ FACES MATCH" : "✗ NO MATCH";
+          vEl.className = "verdict " + (isMatch ? "match" : "no-match");
+
+          document.getElementById("v-log-id").textContent =
+            "#" + (data.log_id || "—");
+
+          // Face comparison strip
+          document.getElementById("fc-img1").src = URL.createObjectURL(f1);
+          document.getElementById("fc-img2").src = URL.createObjectURL(f2);
+          document.getElementById("fc-score-text").textContent =
+            pct.toFixed(1) + "% similarity";
+
+          // Gauge
+          updateGauge("v-gauge-ring", "v-gauge-pct", pct);
+          document.getElementById("v-score-big").textContent =
+            pct.toFixed(1) + "%";
+
+          // Bars
+          const thrDelta = Math.abs(pct - 60);
+          updateBar("vb-sim", "vb-sim-v", pct);
+          updateBar(
+            "vb-conf",
+            "vb-conf-v",
+            isMatch ? Math.min(pct * 1.1, 100) : Math.max(100 - pct, 10),
+          );
+          updateBar("vb-thr", "vb-thr-v", Math.min(thrDelta * 2, 100));
+
+          // Reset feedback buttons
+          document.getElementById("v-fb-y").className = "fb-btn correct";
+          document.getElementById("v-fb-n").className = "fb-btn wrong";
+
+          document.getElementById("verify-res").classList.add("visible");
+          document
+            .getElementById("verify-res")
+            .scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (e) {
+          showToast("Request failed", "error");
+        } finally {
+          btn.disabled = false;
+          btn.classList.remove("loading");
+          btn.textContent = "Run Comparison";
+        }
+      }
+
+      // ---- SEARCH ----
+      async function runSearch() {
+        const f1 = document.getElementById("s1").files[0];
+        if (!f1) {
+          showToast("Please select an image", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-search");
+        btn.disabled = true;
+        btn.classList.add("loading");
+        btn.textContent = "Searching…";
+
+        const fd = new FormData();
+        fd.append("file", f1);
+
+        try {
+          const res = await fetch("/api/identify", {
+            method: "POST",
+            body: fd,
+          });
+          const data = await res.json();
+
+          lastSearchLogId = data.log_id;
+          const pct = Math.min(data.confidence * 100, 100);
+
+          document.getElementById("s-verdict").textContent =
+            "👤 " + (data.name || "Unknown");
+          document.getElementById("s-log-id").textContent =
+            "#" + (data.log_id || "—");
+          document.getElementById("s-score-big").textContent =
+            pct.toFixed(1) + "%";
+
+          updateGauge("s-gauge-ring", "s-gauge-pct", pct);
+          updateBar("sb-match", "sb-match-v", pct);
+          updateBar("sb-cert", "sb-cert-v", Math.min(pct * 1.1, 100));
+          updateBar("sb-risk", "sb-risk-v", Math.max(100 - pct, 5));
+
+          document.getElementById("s-fb-y").className = "fb-btn correct";
+          document.getElementById("s-fb-n").className = "fb-btn wrong";
+
+          document.getElementById("search-res").classList.add("visible");
+          document
+            .getElementById("search-res")
+            .scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (e) {
+          showToast("Request failed", "error");
+        } finally {
+          btn.disabled = false;
+          btn.classList.remove("loading");
+          btn.textContent = "Identify Person";
+        }
+      }
+
+      // ---- REGISTER ----
+      async function registerFace() {
+        const f1 = document.getElementById("s1").files[0];
+        const name = document.getElementById("new-name").value.trim();
+        if (!f1 || !name) {
+          showToast("Need an image and a name", "error");
+          return;
+        }
+
+        const fd = new FormData();
+        fd.append("file", f1);
+        fd.append("name", name);
+
+        const res = await fetch("/api/register", { method: "POST", body: fd });
+        const data = await res.json();
+        showToast(data.message, data.success ? "success" : "error");
+        if (data.success) document.getElementById("new-name").value = "";
+      }
+
+      // ---- FEEDBACK (inline) ----
+      async function sendVerifyFeedback(type) {
+        if (!lastVerifyLogId) return;
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: lastVerifyLogId, type }),
+        });
+        document.getElementById("v-fb-y").className =
+          "fb-btn correct" + (type === "correct" ? " active-correct" : "");
+        document.getElementById("v-fb-n").className =
+          "fb-btn wrong" + (type === "wrong" ? " active-wrong" : "");
+        showToast("Feedback recorded — thank you!");
+      }
+
+      async function sendSearchFeedback(type) {
+        if (!lastSearchLogId) return;
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: lastSearchLogId, type }),
+        });
+        document.getElementById("s-fb-y").className =
+          "fb-btn correct" + (type === "correct" ? " active-correct" : "");
+        document.getElementById("s-fb-n").className =
+          "fb-btn wrong" + (type === "wrong" ? " active-wrong" : "");
+        showToast("Feedback recorded — thank you!");
+      }
+
+      // ---- DASHBOARD ----
+      async function loadHistory() {
+        const res = await fetch("/api/history");
+        const data = await res.json();
+
+        let correct = 0,
+          wrong = 0,
+          pending = 0;
+        data.forEach((r) => {
+          if (r.feedback === "correct") correct++;
+          else if (r.feedback === "wrong") wrong++;
+          else pending++;
+        });
+        const reviewed = correct + wrong;
+        const acc =
+          reviewed > 0 ? ((correct / reviewed) * 100).toFixed(1) : "—";
+
+        document.getElementById("stat-acc").textContent =
+          reviewed > 0 ? acc + "%" : "—";
+        document.getElementById("stat-total").textContent = data.length;
+        document.getElementById("stat-pending").textContent = pending;
+        document.getElementById("leg-correct").textContent = correct;
+        document.getElementById("leg-wrong").textContent = wrong;
+        document.getElementById("leg-pending").textContent = pending;
+        document.getElementById("d-center-top").textContent =
+          reviewed > 0 ? acc + "%" : "—";
+
+        // Donut arcs
+        const circ = 264;
+        if (reviewed > 0) {
+          const correctPct = correct / reviewed;
+          const wrongPct = wrong / reviewed;
+          const correctOff = circ - circ * correctPct;
+          const wrongOff = circ - circ * wrongPct;
+          document.getElementById("d-correct-arc").style.strokeDashoffset =
+            correctOff;
+          // offset wrong arc to start after correct
+          document.getElementById("d-wrong-arc").style.strokeDashoffset =
+            wrongOff;
+          document
+            .getElementById("d-wrong-arc")
+            .setAttribute(
+              "transform",
+              `rotate(${-90 + correctPct * 360} 55 55)`,
+            );
+        }
+
+        // Table
+        const tbody = document.querySelector("#history-table tbody");
+        tbody.innerHTML = "";
+        data.forEach((row) => {
+          const pct = (row.confidence * 100).toFixed(1);
+          const confClass =
+            row.confidence >= 0.7
+              ? "high"
+              : row.confidence >= 0.4
+                ? "mid"
+                : "low";
+          let fb;
+          if (row.feedback === "correct")
+            fb = '<span class="status-correct">✓ CORRECT</span>';
+          else if (row.feedback === "wrong")
+            fb = '<span class="status-wrong">✗ WRONG</span>';
+          else
+            fb = `<button class="tb-fb-btn" onclick="tableFeedback(${row.id},'correct')">✓</button><button class="tb-fb-btn" onclick="tableFeedback(${row.id},'wrong')">✗</button>`;
+
+          tbody.innerHTML += `
+            <tr>
+                <td style="color:var(--muted);">${row.timestamp}</td>
+                <td><span class="type-badge">${row.type}</span></td>
+                <td>${row.result}</td>
+                <td><span class="conf-pill ${confClass}">${pct}%</span></td>
+                <td>${fb}</td>
+            </tr>`;
+        });
+      }
+
+      async function tableFeedback(id, type) {
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, type }),
+        });
+        showToast("Feedback saved");
+        loadHistory();
+      }
+    </script>
+  </body>
+</html>

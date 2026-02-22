@@ -1,3 +1,3 @@
-streamlit
+# Local development dependencies only.
+# ML and serving packages are installed inside the Modal container image (app/config.py).
 modal
-numpy
