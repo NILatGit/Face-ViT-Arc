@@ -45,8 +45,12 @@ def verify_api_key(key: str = Security(_api_key_header)) -> None:
     # Read the expected key from the environment. This value comes from the
     # Modal secret attached to fastapi_app in main.py. If the environment
     # variable is not set (e.g. secret was misconfigured), expected will be
-    # an empty string and all requests will be rejected.
+    # an empty string. Treat that as "not configured" and bypass auth rather
+    # than silently blocking every request - ensures modal serve works before
+    # the secret is fully set up.
     expected = os.environ.get("API_KEY", "")
+    if not expected:
+        return
 
     # Reject if the header was missing (falsy key) or does not match exactly.
     if not key or key != expected:

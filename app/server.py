@@ -16,8 +16,19 @@ machine.
 """
 
 import os
-from fastapi import FastAPI, UploadFile, File, Form, Security, HTTPException, status
+from fastapi import (
+    FastAPI,
+    Request,
+    UploadFile,
+    File,
+    Form,
+    Security,
+    HTTPException,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from app.auth import verify_api_key
 from app.config import MAX_IMAGE_BYTES, VERIFY_THRESHOLD
@@ -89,6 +100,14 @@ def build_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Serve the frontend
+    web.mount("/static", StaticFiles(directory="/app/static"), name="static")
+    templates = Jinja2Templates(directory="/app/templates")
+
+    @web.get("/")
+    def index(request: Request):
+        return templates.TemplateResponse("index.html", {"request": request})
 
     # Instantiated once per container. All route handlers close over these
     # two objects. db holds a persistent SQLite connection; engine is a Modal

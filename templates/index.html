@@ -4,856 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FaceOS — Neural Identity Suite</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --bg: #080c14;
-        --surface: #0e1420;
-        --card: #111827;
-        --border: #1e2d42;
-        --border-bright: #2d4260;
-        --text: #e2eaf5;
-        --muted: #5a7a9a;
-        --accent: #00d4ff;
-        --accent2: #7c3aed;
-        --green: #00ffa3;
-        --red: #ff4060;
-        --amber: #ffb300;
-        --glow: rgba(0, 212, 255, 0.15);
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: "Space Mono", monospace;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-
-      /* Animated grid background */
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-        background-size: 40px 40px;
-        pointer-events: none;
-        z-index: 0;
-      }
-
-      .app-shell {
-        position: relative;
-        z-index: 1;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 30px 20px;
-      }
-
-      /* ---- HEADER ---- */
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 40px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .logo {
-        font-family: "Syne", sans-serif;
-        font-weight: 800;
-        font-size: 1.6rem;
-        letter-spacing: -0.02em;
-      }
-      .logo span {
-        color: var(--accent);
-      }
-
-      .status-pill {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.7rem;
-        color: var(--muted);
-        border: 1px solid var(--border);
-        padding: 6px 14px;
-        border-radius: 100px;
-      }
-      .status-dot {
-        width: 7px;
-        height: 7px;
-        background: var(--green);
-        border-radius: 50%;
-        box-shadow: 0 0 8px var(--green);
-        animation: pulse 2s ease infinite;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.4;
-        }
-      }
-
-      /* ---- TABS ---- */
-      .tabs {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 28px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 5px;
-      }
-
-      .tab-btn {
-        flex: 1;
-        background: transparent;
-        color: var(--muted);
-        border: none;
-        padding: 11px 16px;
-        border-radius: 7px;
-        cursor: pointer;
-        font-family: "Syne", sans-serif;
-        font-weight: 600;
-        font-size: 0.85rem;
-        letter-spacing: 0.02em;
-        transition: all 0.2s;
-      }
-      .tab-btn:hover {
-        color: var(--text);
-      }
-      .tab-btn.active {
-        background: var(--accent);
-        color: #000;
-        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-      }
-
-      .tab-content {
-        display: none;
-      }
-      .tab-content.active {
-        display: block;
-        animation: fadeUp 0.3s ease;
-      }
-
-      @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* ---- CARDS ---- */
-      .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 28px;
-        margin-bottom: 20px;
-        position: relative;
-        overflow: hidden;
-      }
-      .card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          var(--accent),
-          transparent
-        );
-        opacity: 0.4;
-      }
-
-      .card-title {
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .card-title .icon {
-        width: 32px;
-        height: 32px;
-        background: var(--glow);
-        border: 1px solid rgba(0, 212, 255, 0.2);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-      }
-
-      /* ---- DROP ZONES ---- */
-      .drop-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin-bottom: 20px;
-      }
-      .drop-grid.single {
-        grid-template-columns: 1fr;
-      }
-
-      .drop-zone {
-        border: 2px dashed var(--border-bright);
-        border-radius: 12px;
-        padding: 24px 16px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.25s;
-        background: var(--surface);
-        position: relative;
-        min-height: 180px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
-      .drop-zone:hover {
-        border-color: var(--accent);
-        background: rgba(0, 212, 255, 0.04);
-        box-shadow: 0 0 20px var(--glow);
-      }
-      .drop-zone.has-image {
-        border-color: var(--accent);
-        border-style: solid;
-        padding: 8px;
-        gap: 0;
-      }
-      .drop-zone .dz-icon {
-        font-size: 2rem;
-        opacity: 0.5;
-      }
-      .drop-zone .dz-label {
-        font-size: 0.75rem;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-      .drop-zone .dz-badge {
-        font-size: 0.65rem;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        color: var(--accent);
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .preview-img {
-        width: 100%;
-        height: 160px;
-        object-fit: cover;
-        border-radius: 8px;
-        display: none;
-      }
-      .preview-img.visible {
-        display: block;
-      }
-
-      .preview-name {
-        font-size: 0.7rem;
-        color: var(--muted);
-        margin-top: 8px;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        display: none;
-      }
-      .preview-name.visible {
-        display: block;
-      }
-
-      input[type="file"] {
-        display: none;
-      }
-
-      /* ---- ACTION BUTTON ---- */
-      .btn-action {
-        width: 100%;
-        padding: 14px;
-        background: var(--accent);
-        color: #000;
-        border: none;
-        border-radius: 10px;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.9rem;
-        letter-spacing: 0.05em;
-        cursor: pointer;
-        transition: all 0.2s;
-        position: relative;
-        overflow: hidden;
-      }
-      .btn-action:hover {
-        box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-        transform: translateY(-1px);
-      }
-      .btn-action:active {
-        transform: translateY(0);
-      }
-      .btn-action:disabled {
-        background: var(--border);
-        color: var(--muted);
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-      }
-      .btn-action.loading::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.15);
-        animation: shimmer 1s ease infinite;
-      }
-      @keyframes shimmer {
-        0% {
-          width: 0%;
-        }
-        50% {
-          width: 60%;
-        }
-        100% {
-          width: 100%;
-        }
-      }
-
-      .btn-secondary {
-        width: 100%;
-        padding: 12px;
-        background: transparent;
-        color: var(--text);
-        border: 1px solid var(--border-bright);
-        border-radius: 10px;
-        font-family: "Syne", sans-serif;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        margin-top: 10px;
-      }
-      .btn-secondary:hover {
-        border-color: var(--accent2);
-        color: var(--accent2);
-      }
-
-      /* ---- RESULT PANEL ---- */
-      .result-panel {
-        margin-top: 24px;
-        display: none;
-        animation: fadeUp 0.4s ease;
-      }
-      .result-panel.visible {
-        display: block;
-      }
-
-      .result-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      }
-
-      .verdict {
-        font-family: "Syne", sans-serif;
-        font-size: 1.5rem;
-        font-weight: 800;
-      }
-      .verdict.match {
-        color: var(--green);
-        text-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
-      }
-      .verdict.no-match {
-        color: var(--red);
-        text-shadow: 0 0 20px rgba(255, 64, 96, 0.4);
-      }
-      .verdict.found {
-        color: var(--accent);
-        text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-      }
-
-      /* Gauge chart */
-      .gauge-wrap {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px 24px;
-        margin-bottom: 16px;
-      }
-
-      .gauge-svg {
-        flex-shrink: 0;
-      }
-
-      .gauge-info {
-        flex: 1;
-      }
-      .gauge-score {
-        font-family: "Syne", sans-serif;
-        font-size: 2.4rem;
-        font-weight: 800;
-        line-height: 1;
-        margin-bottom: 4px;
-      }
-      .gauge-label {
-        font-size: 0.7rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-      }
-
-      /* Breakdown bars */
-      .breakdown {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 18px 20px;
-        margin-bottom: 16px;
-      }
-      .breakdown-title {
-        font-size: 0.7rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        margin-bottom: 14px;
-      }
-
-      .bar-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 10px;
-      }
-      .bar-label {
-        font-size: 0.72rem;
-        color: var(--muted);
-        width: 110px;
-        flex-shrink: 0;
-      }
-      .bar-track {
-        flex: 1;
-        height: 6px;
-        background: var(--border);
-        border-radius: 3px;
-        overflow: hidden;
-      }
-      .bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        width: 0%;
-      }
-      .bar-fill.cyan {
-        background: var(--accent);
-      }
-      .bar-fill.green {
-        background: var(--green);
-      }
-      .bar-fill.amber {
-        background: var(--amber);
-      }
-      .bar-fill.red {
-        background: var(--red);
-      }
-      .bar-value {
-        font-size: 0.72rem;
-        color: var(--text);
-        width: 38px;
-        text-align: right;
-      }
-
-      /* Threshold indicator */
-      .threshold-line {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 0.72rem;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      .threshold-line::before {
-        content: "";
-        display: inline-block;
-        width: 20px;
-        height: 1px;
-        background: var(--amber);
-        border-top: 1px dashed var(--amber);
-      }
-
-      /* Compare faces row */
-      .face-compare {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
-      }
-      .face-compare img {
-        width: 70px;
-        height: 70px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 2px solid var(--border-bright);
-      }
-      .face-compare .connector {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-      }
-      .connector-line {
-        width: 100%;
-        height: 2px;
-        position: relative;
-        overflow: visible;
-      }
-      .connector-line::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 5%;
-        right: 5%;
-        height: 2px;
-        background: linear-gradient(
-          90deg,
-          var(--border-bright),
-          var(--accent),
-          var(--border-bright)
-        );
-      }
-      .connector-dots {
-        font-size: 0.65rem;
-        color: var(--muted);
-        letter-spacing: 0.08em;
-      }
-
-      /* ---- FEEDBACK STRIP ---- */
-      .feedback-strip {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 18px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--surface);
-      }
-      .feedback-strip .fb-q {
-        flex: 1;
-        font-size: 0.78rem;
-        color: var(--muted);
-      }
-      .fb-btn {
-        padding: 7px 16px;
-        border-radius: 7px;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.78rem;
-        cursor: pointer;
-        border: 1px solid;
-        transition: all 0.2s;
-      }
-      .fb-btn.correct {
-        color: var(--green);
-        border-color: rgba(0, 255, 163, 0.3);
-        background: rgba(0, 255, 163, 0.06);
-      }
-      .fb-btn.correct:hover {
-        background: rgba(0, 255, 163, 0.15);
-      }
-      .fb-btn.wrong {
-        color: var(--red);
-        border-color: rgba(255, 64, 96, 0.3);
-        background: rgba(255, 64, 96, 0.06);
-      }
-      .fb-btn.wrong:hover {
-        background: rgba(255, 64, 96, 0.15);
-      }
-      .fb-btn.active-correct {
-        background: var(--green) !important;
-        color: #000 !important;
-      }
-      .fb-btn.active-wrong {
-        background: var(--red) !important;
-        color: #fff !important;
-      }
-
-      /* Input fields */
-      .input-field {
-        width: 100%;
-        padding: 12px 14px;
-        background: var(--surface);
-        border: 1px solid var(--border-bright);
-        border-radius: 8px;
-        color: var(--text);
-        font-family: "Space Mono", monospace;
-        font-size: 0.85rem;
-        margin: 12px 0;
-        transition: border-color 0.2s;
-        outline: none;
-      }
-      .input-field:focus {
-        border-color: var(--accent);
-      }
-
-      /* ---- DASHBOARD ---- */
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-        margin-bottom: 24px;
-      }
-
-      .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-      }
-      .stat-card::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-      }
-      .stat-card.acc::after {
-        background: var(--green);
-      }
-      .stat-card.total::after {
-        background: var(--accent);
-      }
-      .stat-card.pending::after {
-        background: var(--amber);
-      }
-
-      .stat-num {
-        font-family: "Syne", sans-serif;
-        font-size: 2.2rem;
-        font-weight: 800;
-        line-height: 1;
-        margin-bottom: 6px;
-      }
-      .stat-card.acc .stat-num {
-        color: var(--green);
-      }
-      .stat-card.total .stat-num {
-        color: var(--accent);
-      }
-      .stat-card.pending .stat-num {
-        color: var(--amber);
-      }
-      .stat-lbl {
-        font-size: 0.68rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-      }
-
-      /* Donut */
-      .donut-wrap {
-        display: flex;
-        align-items: center;
-        gap: 28px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px 24px;
-        margin-bottom: 20px;
-      }
-      .donut-legend {
-        flex: 1;
-      }
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        font-size: 0.78rem;
-      }
-      .legend-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-      }
-      .legend-label {
-        color: var(--muted);
-        flex: 1;
-      }
-      .legend-val {
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-      }
-
-      /* Log table */
-      .log-table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .log-table th {
-        text-align: left;
-        font-size: 0.65rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--border);
-      }
-      .log-table td {
-        padding: 11px 12px;
-        font-size: 0.78rem;
-        border-bottom: 1px solid rgba(30, 45, 66, 0.5);
-        vertical-align: middle;
-      }
-      .log-table tr:last-child td {
-        border-bottom: none;
-      }
-      .log-table tr:hover td {
-        background: rgba(0, 212, 255, 0.02);
-      }
-
-      .conf-pill {
-        display: inline-block;
-        padding: 3px 9px;
-        border-radius: 100px;
-        font-size: 0.68rem;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-      }
-      .conf-pill.high {
-        background: rgba(0, 255, 163, 0.1);
-        color: var(--green);
-        border: 1px solid rgba(0, 255, 163, 0.2);
-      }
-      .conf-pill.mid {
-        background: rgba(255, 179, 0, 0.1);
-        color: var(--amber);
-        border: 1px solid rgba(255, 179, 0, 0.2);
-      }
-      .conf-pill.low {
-        background: rgba(255, 64, 96, 0.1);
-        color: var(--red);
-        border: 1px solid rgba(255, 64, 96, 0.2);
-      }
-
-      .type-badge {
-        font-size: 0.65rem;
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 4px;
-        background: rgba(124, 58, 237, 0.15);
-        color: #a78bfa;
-        border: 1px solid rgba(124, 58, 237, 0.2);
-      }
-
-      .tb-fb-btn {
-        font-size: 0.7rem;
-        padding: 4px 10px;
-        border-radius: 5px;
-        border: 1px solid var(--border);
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
-        margin-right: 4px;
-        font-family: "Space Mono", monospace;
-        transition: all 0.15s;
-      }
-      .tb-fb-btn:hover {
-        border-color: var(--accent);
-        color: var(--text);
-      }
-      .status-correct {
-        color: var(--green);
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.75rem;
-      }
-      .status-wrong {
-        color: var(--red);
-        font-family: "Syne", sans-serif;
-        font-weight: 700;
-        font-size: 0.75rem;
-      }
-
-      /* Toast */
-      .toast {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: var(--card);
-        border: 1px solid var(--border-bright);
-        border-radius: 10px;
-        padding: 14px 20px;
-        font-size: 0.8rem;
-        z-index: 9999;
-        transform: translateY(80px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        max-width: 280px;
-      }
-      .toast.show {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      .toast.success {
-        border-color: rgba(0, 255, 163, 0.4);
-      }
-      .toast.error {
-        border-color: rgba(255, 64, 96, 0.4);
-      }
-
-      /* Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--bg);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--border-bright);
-        border-radius: 3px;
-      }
-    </style>
+    <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <div id="toast" class="toast"></div>
@@ -867,15 +18,29 @@
         </div>
       </header>
 
+      <!-- API Key Bar -->
+      <div class="api-key-bar">
+        <span class="api-key-label">API Key</span>
+        <input
+          type="password"
+          id="api-key-input"
+          class="input-field"
+          placeholder="Paste X-API-Key here"
+          autocomplete="off"
+        />
+        <button class="btn-secondary" onclick="saveApiKey()">Save</button>
+        <span class="api-key-status" id="api-key-status">No key saved</span>
+      </div>
+
       <div class="tabs">
         <button class="tab-btn active" onclick="showTab('verify', this)">
-          ⚖ 1:1 Verify
+          1:1 Verify
         </button>
         <button class="tab-btn" onclick="showTab('search', this)">
-          ⌕ Identify
+          Identify
         </button>
         <button class="tab-btn" onclick="showTab('dashboard', this)">
-          ◈ Dashboard
+          Dashboard
         </button>
       </div>
 
@@ -883,7 +48,7 @@
       <div id="verify" class="tab-content active">
         <div class="card">
           <div class="card-title">
-            <div class="icon">⚖</div>
+            <div class="icon">01</div>
             Compare Two Faces
           </div>
 
@@ -894,7 +59,7 @@
               onclick="document.getElementById('v1').click()"
             >
               <img class="preview-img" id="prev-v1" alt="Face 1 preview" />
-              <div class="dz-icon" id="dz-v1-icon">👤</div>
+              <div class="dz-icon" id="dz-v1-icon">+</div>
               <div class="dz-badge">Face 1</div>
               <div class="dz-label" id="dz-v1-label">Click or drop image</div>
               <input
@@ -919,7 +84,7 @@
               onclick="document.getElementById('v2').click()"
             >
               <img class="preview-img" id="prev-v2" alt="Face 2 preview" />
-              <div class="dz-icon" id="dz-v2-icon">👤</div>
+              <div class="dz-icon" id="dz-v2-icon">+</div>
               <div class="dz-badge">Face 2</div>
               <div class="dz-label" id="dz-v2-label">Click or drop image</div>
               <input
@@ -978,7 +143,7 @@
                   cy="45"
                   r="36"
                   fill="none"
-                  stroke="#1e2d42"
+                  stroke="#4e4b3a"
                   stroke-width="8"
                 />
                 <circle
@@ -987,7 +152,7 @@
                   cy="45"
                   r="36"
                   fill="none"
-                  stroke="#00d4ff"
+                  stroke="#d77d00"
                   stroke-width="8"
                   stroke-dasharray="226"
                   stroke-dashoffset="226"
@@ -1007,7 +172,7 @@
                   font-family="Syne"
                   font-weight="800"
                   font-size="16"
-                  fill="#e2eaf5"
+                  fill="#1c1b14"
                 >
                   —
                 </text>
@@ -1053,14 +218,14 @@
                 id="v-fb-y"
                 onclick="sendVerifyFeedback('correct')"
               >
-                ✓ Correct
+                Correct
               </button>
               <button
                 class="fb-btn wrong"
                 id="v-fb-n"
                 onclick="sendVerifyFeedback('wrong')"
               >
-                ✗ Wrong
+                Wrong
               </button>
             </div>
           </div>
@@ -1071,7 +236,7 @@
       <div id="search" class="tab-content">
         <div class="card">
           <div class="card-title">
-            <div class="icon">⌕</div>
+            <div class="icon">02</div>
             Identify From Database
           </div>
 
@@ -1082,7 +247,7 @@
               onclick="document.getElementById('s1').click()"
             >
               <img class="preview-img" id="prev-s1" alt="Search preview" />
-              <div class="dz-icon" id="dz-s1-icon">🔍</div>
+              <div class="dz-icon" id="dz-s1-icon">+</div>
               <div class="dz-badge">Query Face</div>
               <div class="dz-label" id="dz-s1-label">Click to select image</div>
               <input
@@ -1131,7 +296,7 @@
                   cy="45"
                   r="36"
                   fill="none"
-                  stroke="#1e2d42"
+                  stroke="#4e4b3a"
                   stroke-width="8"
                 />
                 <circle
@@ -1140,7 +305,7 @@
                   cy="45"
                   r="36"
                   fill="none"
-                  stroke="#00d4ff"
+                  stroke="#d77d00"
                   stroke-width="8"
                   stroke-dasharray="226"
                   stroke-dashoffset="226"
@@ -1160,7 +325,7 @@
                   font-family="Syne"
                   font-weight="800"
                   font-size="16"
-                  fill="#e2eaf5"
+                  fill="#1c1b14"
                 >
                   —
                 </text>
@@ -1219,14 +384,14 @@
                 id="s-fb-y"
                 onclick="sendSearchFeedback('correct')"
               >
-                ✓ Correct
+                Correct
               </button>
               <button
                 class="fb-btn wrong"
                 id="s-fb-n"
                 onclick="sendSearchFeedback('wrong')"
               >
-                ✗ Wrong
+                Wrong
               </button>
             </div>
           </div>
@@ -1237,7 +402,7 @@
       <div id="dashboard" class="tab-content">
         <div class="card">
           <div class="card-title">
-            <div class="icon">◈</div>
+            <div class="icon">03</div>
             System Analytics
           </div>
 
@@ -1264,7 +429,7 @@
                 cy="55"
                 r="42"
                 fill="none"
-                stroke="#1e2d42"
+                stroke="#4e4b3a"
                 stroke-width="14"
               />
               <circle
@@ -1273,7 +438,7 @@
                 cy="55"
                 r="42"
                 fill="none"
-                stroke="#00ffa3"
+                stroke="#4a7a2a"
                 stroke-width="14"
                 stroke-dasharray="264"
                 stroke-dashoffset="264"
@@ -1287,7 +452,7 @@
                 cy="55"
                 r="42"
                 fill="none"
-                stroke="#ff4060"
+                stroke="#b83030"
                 stroke-width="14"
                 stroke-dasharray="264"
                 stroke-dashoffset="264"
@@ -1302,7 +467,7 @@
                 font-family="Syne"
                 font-weight="800"
                 font-size="15"
-                fill="#e2eaf5"
+                fill="#1c1b14"
                 id="d-center-top"
               >
                 —
@@ -1313,7 +478,7 @@
                 text-anchor="middle"
                 font-family="Space Mono"
                 font-size="8"
-                fill="#5a7a9a"
+                fill="#6b6850"
               >
                 accuracy
               </text>
@@ -1332,7 +497,7 @@
               <div class="legend-item">
                 <div
                   class="legend-dot"
-                  style="background: var(--border-bright)"
+                  style="background: var(--border-mid)"
                 ></div>
                 <div class="legend-label">Pending</div>
                 <div class="legend-val" id="leg-pending">—</div>
@@ -1364,6 +529,31 @@
       // ---- State ----
       let lastVerifyLogId = null;
       let lastSearchLogId = null;
+
+      // ---- API Key ----
+      function getApiKey() {
+        return localStorage.getItem("faceos_api_key") || "";
+      }
+
+      function saveApiKey() {
+        const val = document.getElementById("api-key-input").value.trim();
+        if (!val) {
+          showToast("Enter a key first", "error");
+          return;
+        }
+        localStorage.setItem("faceos_api_key", val);
+        document.getElementById("api-key-input").value = "";
+        document.getElementById("api-key-status").textContent =
+          "Saved — ends in " + val.slice(-4);
+        showToast("API key saved");
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const saved = localStorage.getItem("faceos_api_key");
+        if (saved)
+          document.getElementById("api-key-status").textContent =
+            "Key set — ends in " + saved.slice(-4);
+      });
 
       // ---- Tab Switching ----
       function showTab(id, btn) {
@@ -1401,7 +591,7 @@
         const offset = circumference - (circumference * pct) / 100;
         const ring = document.getElementById(ringId);
         ring.style.strokeDashoffset = offset;
-        const color = pct >= 60 ? "#00ffa3" : pct >= 40 ? "#ffb300" : "#ff4060";
+        const color = pct >= 60 ? "#4a7a2a" : pct >= 40 ? "#d77d00" : "#b83030";
         ring.style.stroke = color;
         document.getElementById(pctId).textContent = Math.round(pct) + "%";
       }
@@ -1443,7 +633,11 @@
         fd.append("file2", f2);
 
         try {
-          const res = await fetch("/api/verify", { method: "POST", body: fd });
+          const res = await fetch("/api/verify", {
+            method: "POST",
+            body: fd,
+            headers: { "X-API-Key": getApiKey() },
+          });
           const data = await res.json();
 
           if (data.error) {
@@ -1457,7 +651,7 @@
 
           // Verdict
           const vEl = document.getElementById("v-verdict");
-          vEl.textContent = isMatch ? "✓ FACES MATCH" : "✗ NO MATCH";
+          vEl.textContent = isMatch ? "FACES MATCH" : "NO MATCH";
           vEl.className = "verdict " + (isMatch ? "match" : "no-match");
 
           document.getElementById("v-log-id").textContent =
@@ -1521,6 +715,7 @@
           const res = await fetch("/api/identify", {
             method: "POST",
             body: fd,
+            headers: { "X-API-Key": getApiKey() },
           });
           const data = await res.json();
 
@@ -1528,7 +723,7 @@
           const pct = Math.min(data.confidence * 100, 100);
 
           document.getElementById("s-verdict").textContent =
-            "👤 " + (data.name || "Unknown");
+            data.name || "Unknown";
           document.getElementById("s-log-id").textContent =
             "#" + (data.log_id || "—");
           document.getElementById("s-score-big").textContent =
@@ -1568,7 +763,11 @@
         fd.append("file", f1);
         fd.append("name", name);
 
-        const res = await fetch("/api/register", { method: "POST", body: fd });
+        const res = await fetch("/api/register", {
+          method: "POST",
+          body: fd,
+          headers: { "X-API-Key": getApiKey() },
+        });
         const data = await res.json();
         showToast(data.message, data.success ? "success" : "error");
         if (data.success) document.getElementById("new-name").value = "";
@@ -1579,8 +778,11 @@
         if (!lastVerifyLogId) return;
         await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: lastVerifyLogId, type }),
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+          },
+          body: JSON.stringify({ log_id: lastVerifyLogId, feedback: type }),
         });
         document.getElementById("v-fb-y").className =
           "fb-btn correct" + (type === "correct" ? " active-correct" : "");
@@ -1593,8 +795,11 @@
         if (!lastSearchLogId) return;
         await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: lastSearchLogId, type }),
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+          },
+          body: JSON.stringify({ log_id: lastSearchLogId, feedback: type }),
         });
         document.getElementById("s-fb-y").className =
           "fb-btn correct" + (type === "correct" ? " active-correct" : "");
@@ -1605,7 +810,9 @@
 
       // ---- DASHBOARD ----
       async function loadHistory() {
-        const res = await fetch("/api/history");
+        const res = await fetch("/api/history", {
+          headers: { "X-API-Key": getApiKey() },
+        });
         const data = await res.json();
 
         let correct = 0,
@@ -1663,16 +870,16 @@
                 : "low";
           let fb;
           if (row.feedback === "correct")
-            fb = '<span class="status-correct">✓ CORRECT</span>';
+            fb = '<span class="status-correct">CORRECT</span>';
           else if (row.feedback === "wrong")
-            fb = '<span class="status-wrong">✗ WRONG</span>';
+            fb = '<span class="status-wrong">WRONG</span>';
           else
-            fb = `<button class="tb-fb-btn" onclick="tableFeedback(${row.id},'correct')">✓</button><button class="tb-fb-btn" onclick="tableFeedback(${row.id},'wrong')">✗</button>`;
+            fb = `<button class="tb-fb-btn" onclick="tableFeedback(${row.id},'correct')">Y</button><button class="tb-fb-btn" onclick="tableFeedback(${row.id},'wrong')">N</button>`;
 
           tbody.innerHTML += `
             <tr>
-                <td style="color:var(--muted);">${row.timestamp}</td>
-                <td><span class="type-badge">${row.type}</span></td>
+                <td style="color:var(--muted);">${row.created_at}</td>
+                <td><span class="type-badge">${row.operation}</span></td>
                 <td>${row.result}</td>
                 <td><span class="conf-pill ${confClass}">${pct}%</span></td>
                 <td>${fb}</td>
@@ -1683,8 +890,11 @@
       async function tableFeedback(id, type) {
         await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, type }),
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+          },
+          body: JSON.stringify({ log_id: id, feedback: type }),
         });
         showToast("Feedback saved");
         loadHistory();

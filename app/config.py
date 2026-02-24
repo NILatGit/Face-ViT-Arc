@@ -96,8 +96,12 @@ image = (
         "fastapi",
         "python-multipart",
         "faiss-cpu",
+        "jinja2",
+        "aiofiles",
     )
     .add_local_python_source("app")
+    .add_local_dir("templates", remote_path="/app/templates")
+    .add_local_dir("static", remote_path="/app/static")
 )
 
 
