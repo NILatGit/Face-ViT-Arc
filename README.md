@@ -306,4 +306,4 @@ curl -X POST $BASE/api/feedback \
   -d '{"log_id": 13, "feedback": "correct"}'
 ```
 
-Endpoint Link: https://sayangupta840--face-recognition-suite-fastapi-app-dev.modal.run/
+Endpoint Link: [https://sayangupta840--face-recognition-suite-fastapi-app.modal.run/](https://sayangupta840--face-recognition-suite-fastapi-app.modal.run/)
